@@ -1,0 +1,44 @@
+pipeline {
+    agent any
+    environment {
+        AWS_REGION = 'ap-southeast-2'
+        ECR_REPO = '541730394177.dkr.ecr.ap-southeast-2.amazonaws.com/deploy/frontend'
+        GITHUB_CREDENTIALS = 'git'
+    }
+    stages {
+        stage('Clone Repository') {
+            steps {
+                git branch: 'deploy', credentialsId: "${GITHUB_CREDENTIALS}", url: 'https://github.com/ronzhang0828/gamera-fe.git'
+            }
+        }
+        stage('Build Frontend') {
+            steps {
+                sh 'npm install'
+                sh 'npm run build'
+            }
+        }
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t $ECR_REPO:latest .'
+            }
+        }
+        stage('Push to AWS ECR') {
+            steps {
+                sh 'aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPO'
+                sh 'docker push $ECR_REPO:latest'
+            }
+        }
+        stage('Deploy to EC2') {
+            steps {
+                sshagent(['ec2-ssh-key']) {
+                    sh '''
+                    docker pull $ECR_REPO:latest
+                    docker stop frontend || true
+                    docker rm frontend || true
+                    docker run -d -p 80:80 --name frontend $ECR_REPO:latest
+                    '''
+                }
+            }
+        }
+    }
+}
