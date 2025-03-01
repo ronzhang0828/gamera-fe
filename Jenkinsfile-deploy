@@ -11,15 +11,15 @@ pipeline {
                 git branch: 'deploy', credentialsId: "${GITHUB_CREDENTIALS}", url: 'https://github.com/ronzhang0828/gamera-fe.git'
             }
         }
-        stage('Clean Workspace') {
-            steps {
-                sh 'rm -rf node_modules package-lock.json' // Remove old dependencies
-                sh 'npm cache clean --force' // Clear npm cache
-            }
-        }
+        // stage('Clean Workspace') {
+        //     steps {
+        //         sh 'rm -rf node_modules package-lock.json' // Remove old dependencies
+        //         sh 'npm cache clean --force' // Clear npm cache
+        //     }
+        // }
         stage('Build Frontend') {
             steps {
-                sh 'npm install --legacy-peer-deps'
+                sh 'npm install'
                 sh 'npm run build'
             }
         }
